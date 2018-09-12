@@ -1,0 +1,6 @@
+package: github.com/nknorg/db_export
+ignore:
+- github.com/nknorg/nkn
+import:
+- package: github.com/urfave/cli
+  version: ~1.20.0
