@@ -13,38 +13,32 @@ import (
 	"github.com/urfave/cli"
 )
 
-func main() {
-	app := cli.NewApp()
-	app.Name = "dbexport"
-	app.Version = "0.0.1"
-	app.Commands = []cli.Command{
-		cli.Command{
-			Name:        "export",
-			Usage:       "export db items",
-			Description: "export db items",
-			ArgsUsage:   "[args]",
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "path",
-					Usage: "the path of db",
-				},
-				cli.StringFlag{
-					Name:  "item",
-					Usage: "the prefix of db. include version, currentblockhash, bookkeeper,asset,issued,prepaid, unspent,utxo,transaction,header,blockhash,block",
-				},
-
-				cli.StringFlag{
-					Name:  "key",
-					Usage: "the key of item, hex string",
-				},
+func NewExportCommand() *cli.Command {
+	return &cli.Command{
+		Name:        "export",
+		Usage:       "export db items",
+		Description: "export db items",
+		ArgsUsage:   "[args]",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "path",
+				Usage: "the path of db",
 			},
-			Action: exportAction,
-			OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-				return cli.NewExitError("", 1)
+			cli.StringFlag{
+				Name:  "item",
+				Usage: "the prefix of db. include version, currentblockhash, bookkeeper,asset,issued,prepaid, unspent,utxo,transaction,header,blockhash,block",
+			},
+
+			cli.StringFlag{
+				Name:  "key",
+				Usage: "the key of item, hex string",
 			},
 		},
+		Action: exportAction,
+		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
+			return cli.NewExitError("", 1)
+		},
 	}
-	app.Run(os.Args)
 }
 
 func exportAction(c *cli.Context) (err error) {
@@ -57,6 +51,9 @@ func exportAction(c *cli.Context) (err error) {
 	item := c.String("item")
 	keystr := c.String("key")
 	key, _ := hex.DecodeString(keystr)
+
+	//TODO 1. txs number in block
+	//TODO 2. headerlist
 
 	prefix := []byte{}
 	switch item {
