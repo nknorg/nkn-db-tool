@@ -1,6 +1,6 @@
 # nkn-db-tool
 
-Export NKN's DB to files.
+Export NKN's DB to files or rollback it.
 
 ## INSTALL
 
@@ -21,19 +21,29 @@ $ glide install
 3. build.
 
 ```
-$ go build dbexport.go
+$ make
 ```
 
 ## USAGE
 
 ```
-$ dbexport export [command options] [args]
+$ ./dbtool command [command options] [args]
+
+COMMANDS:
+     export    export db items
+     rollback  rollback db blocks
+     help, h   Shows a list of commands or help for one command
 ```
 
+
 OPTIONS:  
+export command:
    --path value  the path of db  
    --item value  the prefix of db. include version, currentblockhash, bookkeeper,asset,issued,prepaid, unspent,utxo,transaction,header,blockhash,block  
    --key value   the key of item, hex string (optional)  
+rollback command:
+   --path value, -p value  the path of db  
+   --num value, -n value   the number of blocks to be rollbacked (default: 0)  
 
 example
 
