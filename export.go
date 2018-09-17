@@ -21,16 +21,16 @@ func NewExportCommand() *cli.Command {
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "path",
+				Name:  "path, p",
 				Usage: "the path of db",
 			},
 			cli.StringFlag{
-				Name:  "item",
-				Usage: "the prefix of db. include version, currentblockhash, bookkeeper,asset,issued,prepaid, unspent,utxo,transaction,header,blockhash,block",
+				Name:  "item, i",
+				Usage: "the prefix of db. include version, currentblockhash, bookkeeper,asset,issued,prepaid, unspent,utxo,transaction,header,blockhash,block, headerlist",
 			},
 
 			cli.StringFlag{
-				Name:  "key",
+				Name:  "key, k",
 				Usage: "the key of item, hex string",
 			},
 		},
@@ -52,9 +52,6 @@ func exportAction(c *cli.Context) (err error) {
 	keystr := c.String("key")
 	key, _ := hex.DecodeString(keystr)
 
-	//TODO 1. txs number in block
-	//TODO 2. headerlist
-
 	prefix := []byte{}
 	switch item {
 	case "version":
@@ -75,13 +72,15 @@ func exportAction(c *cli.Context) (err error) {
 		prefix = append([]byte{byte(db.IX_Unspent_UTXO)}, key...)
 	case "transaction":
 		prefix = append([]byte{byte(db.DATA_Transaction)}, key...)
+	case "headerlist":
+		prefix = append([]byte{byte(db.IX_HeaderHashList)}, key...)
 	case "header":
 		prefix = append([]byte{byte(db.DATA_Header)}, key...)
 	case "blockhash":
 		prefix = append([]byte{byte(db.DATA_BlockHash)}, key...)
 	case "block":
 		prefix = append([]byte{byte(db.DATA_Header)}, key...)
-		if err := writeBlockToFile(item+"_"+keystr+".txt", path, prefix); err != nil {
+		if err := writeBlockToFile(item+"_"+keystr+".txt", path, prefix, key); err != nil {
 			fmt.Println(err)
 			return err
 		}
@@ -140,7 +139,7 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-func writeBlockToFile(filename string, dbPath string, key []byte) error {
+func writeBlockToFile(filename string, dbPath string, key []byte, blockhash []byte) error {
 	st, err := db.NewLevelDBStore(dbPath)
 	if err != nil {
 		return err
@@ -184,6 +183,10 @@ func writeBlockToFile(filename string, dbPath string, key []byte) error {
 		buff := bytes.NewBuffer(nil)
 		b.Serialize(buff)
 		w.WriteString(hex.EncodeToString(iter.Key()) + "," + hex.EncodeToString(buff.Bytes()) + "\n")
+
+		if len(blockhash) != 0 {
+			fmt.Println("block number:", len(b.Transactions))
+		}
 	}
 
 	iter.Release()
