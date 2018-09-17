@@ -167,15 +167,17 @@ func rollbackCurrentBlockHash(st *db.LevelDBStore, b *ledger.Block) error {
 func rollbackHeaderHashlist(st *db.LevelDBStore, b *ledger.Block) error {
 	hash := b.Hash()
 	iter := st.NewIterator([]byte{byte(db.IX_HeaderHashList)})
-	var storedHeaderCount uint32
+	var storedHeaderCount uint64
 	var key []byte
 	var headerIndex []common.Uint256
+	var gotit bool
 	for iter.Next() {
 		key = iter.Key()
 		headerIndex = make([]common.Uint256, 0)
 
 		r := bytes.NewReader(iter.Value())
-		storedHeaderCount, err := serialization.ReadVarUint(r, 0)
+		var err error
+		storedHeaderCount, err = serialization.ReadVarUint(r, 0)
 		if err != nil {
 			return err
 		}
@@ -189,20 +191,29 @@ func rollbackHeaderHashlist(st *db.LevelDBStore, b *ledger.Block) error {
 		if hash.CompareTo(headerIndex[len(headerIndex)-1]) == 0 {
 			headerIndex = headerIndex[:len(headerIndex)-1]
 			storedHeaderCount--
+			gotit = true
 			break
 		}
 	}
 	iter.Release()
 
-	var hashArray []byte
-	for _, header := range headerIndex {
-		hashArray = append(hashArray, header.ToArray()...)
-	}
-	hashBuffer := new(bytes.Buffer)
-	serialization.WriteVarUint(hashBuffer, uint64(storedHeaderCount))
-	hashBuffer.Write(hashArray)
+	if gotit {
+		if storedHeaderCount == 0 {
+			return st.BatchDelete(key)
+		} else {
+			var hashArray []byte
+			for _, header := range headerIndex {
+				hashArray = append(hashArray, header.ToArray()...)
+			}
+			hashBuffer := new(bytes.Buffer)
+			serialization.WriteVarUint(hashBuffer, uint64(storedHeaderCount))
+			hashBuffer.Write(hashArray)
 
-	return st.BatchPut(key, hashBuffer.Bytes())
+			return st.BatchPut(key, hashBuffer.Bytes())
+		}
+	}
+	return nil
+
 }
 
 func rollbackUnspentIndex(st *db.LevelDBStore, b *ledger.Block) error {
@@ -243,7 +254,7 @@ func rollbackUTXO(st *db.LevelDBStore, b *ledger.Block) error {
 			heightBuffer := make([]byte, 4)
 			binary.LittleEndian.PutUint32(heightBuffer[:], height)
 			key := append(append(output.ProgramHash.ToArray(), output.AssetID.ToArray()...), heightBuffer...)
-			st.BatchDelete(append([]byte{byte(db.IX_Unspent_UTXO)}, key...))
+			st.BatchDelete(append([]byte{byte(db.IX_Unspent_UTXO)}, key...)) //TODO check if delete the same key
 		}
 
 		for _, input := range txn.Inputs {
@@ -286,6 +297,7 @@ func rollbackUTXO(st *db.LevelDBStore, b *ledger.Block) error {
 				binary.LittleEndian.PutUint32(heightBuffer[:], height)
 				key := append(append(programHash.ToArray(), assetId.ToArray()...), heightBuffer...)
 
+				//TODO if the listnum is 0?
 				listnum := len(unspent)
 				if listnum == 0 {
 					if err := st.BatchDelete(key); err != nil {
