@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/db"
@@ -78,6 +80,17 @@ func exportAction(c *cli.Context) (err error) {
 		prefix = append([]byte{byte(db.DATA_Header)}, key...)
 	case "blockhash":
 		prefix = append([]byte{byte(db.DATA_BlockHash)}, key...)
+	case "height":
+		st, _ := db.NewLevelDBStore(path)
+		data, _ := st.Get([]byte{byte(db.SYS_CurrentBlock)})
+		r := bytes.NewReader(data)
+		var blockHash common.Uint256
+		blockHash.Deserialize(r)
+		currentBlockHeight, _ := serialization.ReadUint32(r)
+		fmt.Println("currnt height:", currentBlockHeight)
+		st.Close()
+		return nil
+
 	case "block":
 		prefix = append([]byte{byte(db.DATA_Header)}, key...)
 		if err := writeBlockToFile(item+"_"+keystr+".txt", path, prefix, key); err != nil {
