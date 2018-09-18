@@ -227,7 +227,7 @@ func rollbackUnspentIndex(st *db.LevelDBStore, b *ledger.Block) error {
 			referTxnOutIndex := input.ReferTxOutputIndex
 			if _, ok := unspents[referTxnHash]; !ok {
 				if unspentValue, err := st.Get(append([]byte{byte(db.IX_Unspent)}, referTxnHash.ToArray()...)); err != nil {
-					return err
+					unspents[referTxnHash] = []uint16{}
 				} else {
 					if unspents[referTxnHash], err = common.GetUint16Array(unspentValue); err != nil {
 						return err
@@ -371,8 +371,14 @@ func rollbackIssued(st *db.LevelDBStore, b *ledger.Block) error {
 			return err
 		}
 
-		if err := st.BatchPut(append([]byte{byte(db.ST_QuantityIssued)}, assetId.ToArray()...), quantity.Bytes()); err != nil {
-			return err
+		if qt == common.Fixed64(0) {
+			if err := st.BatchDelete(append([]byte{byte(db.ST_QuantityIssued)}, assetId.ToArray()...)); err != nil {
+				return err
+			}
+		} else {
+			if err := st.BatchPut(append([]byte{byte(db.ST_QuantityIssued)}, assetId.ToArray()...), quantity.Bytes()); err != nil {
+				return err
+			}
 		}
 
 	}
@@ -419,7 +425,7 @@ func rollbackPrepaidAndWithdraw(st *db.LevelDBStore, b *ledger.Block) error {
 			return errors.New("this is not Prepaid transaciton")
 		}
 
-		pHash, err := txn.GetProgramHashes()
+		pHash, err := getProgramHashes(st, txn)
 		if err != nil || len(pHash) == 0 {
 			return errors.New("no programhash")
 		}
@@ -554,4 +560,38 @@ func getCurrentBlock(st *db.LevelDBStore) (*ledger.Block, error) {
 	}
 
 	return b, nil
+}
+
+func getProgramHashes(st *db.LevelDBStore, txn *tx.Transaction) ([]common.Uint160, error) {
+	if txn == nil {
+		return []common.Uint160{}, errors.New("getProgramHashes transaction is nil.")
+	}
+	hashs := []common.Uint160{}
+	// add inputUTXO's transaction
+	referenceWithUTXO_Output, err := getReference(st, txn)
+	if err != nil {
+		return nil, err
+	}
+	for _, output := range referenceWithUTXO_Output {
+		hashs = append(hashs, output.ProgramHash)
+	}
+
+	return hashs, nil
+}
+
+func getReference(st *db.LevelDBStore, txn *tx.Transaction) (map[*tx.TxnInput]*tx.TxnOutput, error) {
+	if txn.TxType == tx.RegisterAsset {
+		return nil, nil
+	}
+	//UTXO input /  Outputs
+	reference := make(map[*tx.TxnInput]*tx.TxnOutput)
+	// Key index，v UTXOInput
+	for _, utxo := range txn.Inputs {
+		if transaction, _, err := getTransaction(st, utxo.ReferTxID); err != nil {
+			return nil, err
+		} else {
+			reference[utxo] = transaction.Outputs[utxo.ReferTxOutputIndex]
+		}
+	}
+	return reference, nil
 }
