@@ -198,19 +198,20 @@ func rollbackHeaderHashlist(st *db.LevelDBStore, b *ledger.Block) error {
 	iter.Release()
 
 	if gotit {
-		if storedHeaderCount == 0 {
-			return st.BatchDelete(key)
-		} else {
-			var hashArray []byte
-			for _, header := range headerIndex {
-				hashArray = append(hashArray, header.ToArray()...)
-			}
-			hashBuffer := new(bytes.Buffer)
-			serialization.WriteVarUint(hashBuffer, uint64(storedHeaderCount))
-			hashBuffer.Write(hashArray)
+		return st.BatchDelete(key)
+		//if storedHeaderCount == 0 {
+		//	return st.BatchDelete(key)
+		//} else {
+		//	var hashArray []byte
+		//	for _, header := range headerIndex {
+		//		hashArray = append(hashArray, header.ToArray()...)
+		//	}
+		//	hashBuffer := new(bytes.Buffer)
+		//	serialization.WriteVarUint(hashBuffer, uint64(storedHeaderCount))
+		//	hashBuffer.Write(hashArray)
 
-			return st.BatchPut(key, hashBuffer.Bytes())
-		}
+		//	return st.BatchPut(key, hashBuffer.Bytes())
+		//}
 	}
 	return nil
 
