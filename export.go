@@ -88,6 +88,7 @@ func exportAction(c *cli.Context) (err error) {
 		blockHash.Deserialize(r)
 		currentBlockHeight, _ := serialization.ReadUint32(r)
 		fmt.Println("currnt height:", currentBlockHeight)
+		fmt.Println("currnt hash:", blockHash.ToHexString())
 		st.Close()
 		return nil
 
