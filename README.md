@@ -27,7 +27,7 @@ $ make
 ## USAGE
 
 ```
-$ ./dbtool command [command options] [args]
+$ ./dbtool [global options] command [command options] [arguments...]
 
 COMMANDS:
      export    export db items
@@ -37,16 +37,16 @@ COMMANDS:
 
 
 OPTIONS:  
-export command:
-   --path value  the path of db  
-   --item value  the prefix of db. include version, currentblockhash, bookkeeper,asset,issued,prepaid, unspent,utxo,transaction,header,blockhash,block  
-   --key value   the key of item, hex string (optional)  
-rollback command:
-   --path value, -p value  the path of db  
-   --num value, -n value   the number of blocks to be rollbacked (default: 0)  
+export command:  
+   --raw, -r               raw data or readable  
+   --item value, -i value  the prefix of db. include version, currentblockhash, asset, issued, prepaid, unspent,utxo,transaction,header,blockhash, headerlist  
+   --key value, -k value   the key of item, hex string  
+
+rollback command:  
+ --num value, -n value  the number of blocks to be rollbacked (default: 0)  
 
 example
 
 ```
-$ ./dbexport export --path ./Chain --item block --key bfffbe0c0be3aa7e9452180b03d0c82efc904acf2348d4fd4c2e4a915e70ae28
+$ ./dbexport --path ./Chain export --item header --key bfffbe0c0be3aa7e9452180b03d0c82efc904acf2348d4fd4c2e4a915e70ae28
 ```

@@ -23,11 +23,6 @@ func NewRollbackCommand() *cli.Command {
 		Description: "rollback db blocks",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "path, p",
-				Usage: "the path of db",
-			},
-
 			cli.IntFlag{
 				Name:  "num, n",
 				Usage: "the number of blocks to be rollbacked",
@@ -47,7 +42,7 @@ func rollbackAction(c *cli.Context) error {
 		return nil
 	}
 
-	path := c.String("path")
+	path := c.GlobalString("path")
 	num := c.Int("num")
 
 	st, err := db.NewLevelDBStore(path)
