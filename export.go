@@ -35,7 +35,7 @@ func NewExportCommand() *cli.Command {
 			},
 			cli.StringFlag{
 				Name:  "item, i",
-				Usage: "the prefix of db. include version, currentblockhash, asset, issued, prepaid, unspent,utxo,transaction,header,blockhash, headerlist",
+				Usage: "the prefix of db. include version, currentblockhash, asset, issued, prepaid, unspent,utxo,transaction,header,blockhash, headerlist, block",
 			},
 
 			cli.StringFlag{
@@ -102,6 +102,9 @@ func exportAction(c *cli.Context) (err error) {
 	case "headerlist":
 		prefix := append([]byte{byte(db.IX_HeaderHashList)}, key...)
 		err = exportHeaderlist(item+"_"+keystr+".txt", st, prefix, israw)
+	case "block":
+		prefix := append([]byte{byte(db.DATA_Header)}, key...)
+		err = exportBlock(item+"_"+keystr+".txt", st, prefix, israw)
 	default:
 		cli.ShowSubcommandHelp(c)
 	}
@@ -526,6 +529,59 @@ func exportHeaderlist(filename string, st *db.LevelDBStore, key []byte, israw bo
 			w.WriteString(string(data) + "\n")
 		}
 	}
+	iter.Release()
+	w.Flush()
+	f.Close()
+	return nil
+}
+
+func exportBlock(filename string, st *db.LevelDBStore, key []byte, israw bool) error {
+	type value struct {
+		Block string `json:"block"`
+	}
+
+	f, err := createFile(filename)
+	if err != nil {
+		return err
+	}
+
+	w := bufio.NewWriter(f)
+	iter := st.NewIterator(key)
+	for iter.Next() {
+		b := new(ledger.Block)
+		r := bytes.NewReader(iter.Value())
+		serialization.ReadUint64(r)
+		if err = b.FromTrimmedData(r); err != nil {
+			return err
+		}
+
+		for i := 0; i < len(b.Transactions); i++ {
+			hash := b.Transactions[i].Hash()
+			value, err := st.Get(append([]byte{byte(db.DATA_Transaction)}, hash.ToArray()...))
+			if err != nil {
+				return err
+			}
+
+			txn := new(tx.Transaction)
+			if err := txn.Deserialize(bytes.NewReader(value[4:])); err != nil {
+				return err
+			}
+
+			b.Transactions[i] = txn
+		}
+
+		if israw {
+			buff := bytes.NewBuffer(nil)
+			b.Serialize(buff)
+			w.WriteString(hex.EncodeToString(iter.Key()) + "," + hex.EncodeToString(buff.Bytes()) + "\n")
+		} else {
+			blockMarshal, _ := b.MarshalJson()
+			data, _ := json.Marshal(current{Key: hex.EncodeToString(iter.Key()), Value: value{string(blockMarshal)}})
+			w.WriteString(string(data) + "\n")
+		}
+
+	}
+
 	iter.Release()
 	w.Flush()
 	f.Close()

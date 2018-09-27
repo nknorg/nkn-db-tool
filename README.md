@@ -39,7 +39,7 @@ COMMANDS:
 OPTIONS:  
 export command:  
    --raw, -r               raw data or readable  
-   --item value, -i value  the prefix of db. include version, currentblockhash, asset, issued, prepaid, unspent,utxo,transaction,header,blockhash, headerlist  
+   --item value, -i value  the prefix of db. include version, currentblockhash, asset, issued, prepaid, unspent,utxo,transaction,header,blockhash, headerlist,block 
    --key value, -k value   the key of item, hex string  
 
 rollback command:  
