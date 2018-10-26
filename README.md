@@ -48,5 +48,5 @@ rollback command:
 example
 
 ```
-$ ./dbexport --path ./Chain export --item header --key bfffbe0c0be3aa7e9452180b03d0c82efc904acf2348d4fd4c2e4a915e70ae28
+$ ./dbtool --path ./Chain export --item header --key bfffbe0c0be3aa7e9452180b03d0c82efc904acf2348d4fd4c2e4a915e70ae28
 ```
