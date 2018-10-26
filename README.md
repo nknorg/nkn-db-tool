@@ -7,16 +7,14 @@ Export NKN's DB to files or rollback it.
 1. clone the repository.
 
 ```
-$ git clone https://github.com/nknorg/nkn-db-tool.git nknorg/nkn-db-tool
+$ git clone https://github.com/nknorg/nkn-db-tool.git
 ```
 
 2. resolve dependencies.
 
 ```
-$ git clone https://github.com/nknorg/nkn.git nknorg/nkn
-
 $ glide install
-```	
+```
 
 3. build.
 
